@@ -8,7 +8,6 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <link rel="stylesheet" href="../frontend/static/css/dashboard.css">
     <script>
         tailwind.config = {
             theme: {
@@ -26,7 +25,53 @@
             }
         }
     </script>
-   
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .sidebar-divider { border-color: rgba(255, 255, 255, 0.1); }
+        .data-card { transition: all 0.3s ease; }
+        .data-card:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); }
+        .modal { 
+            display: none; 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background-color: rgba(0, 0, 0, 0.5); 
+            z-index: 50; 
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content { 
+            background-color: white; 
+            margin: 15% auto; 
+            padding: 20px; 
+            border-radius: 8px; 
+            width: 90%; 
+            max-width: 500px; 
+            position: relative; 
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .toast { 
+            display: none; 
+            position: fixed; 
+            bottom: 20px; 
+            right: 20px; 
+            z-index: 100; 
+            padding: 12px 20px;
+            border-radius: 6px;
+            color: white;
+            font-weight: 500;
+        }
+        .sort-asc::after { content: " ↑"; }
+        .sort-desc::after { content: " ↓"; }
+        .pagination-btn:disabled { cursor: not-allowed; opacity: 0.5; }
+        .report-success { background-color: #D1FAE5; color: #065F46; }
+        .report-warning { background-color: #FEF3C7; color: #92400E; }
+        .report-error { background-color: #FEE2E2; color: #B91C1C; }
+    </style>
 </head>
 <body class="bg-gray-50 text-gray-800 antialiased">
     <div class="flex h-screen overflow-hidden">
@@ -85,7 +130,7 @@
                     <h1 class="text-2xl font-bold text-dark-900">Reporting PPA</h1>
                     <div class="flex items-center space-x-4">
                         <div class="relative w-64">
-                            <input type="text" placeholder="Rechercher..." class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500" aria-label="Rechercher des rapports">
+                            <input type="text" id="searchInput" placeholder="Rechercher..." class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500" aria-label="Rechercher des rapports">
                             <i data-lucide="search" class="absolute left-3 top-2.5 text-gray-400 w-4 h-4" aria-hidden="true"></i>
                         </div>
                         <button class="p-2 text-gray-500 hover:text-gray-700 relative" aria-label="Notifications">
@@ -134,7 +179,6 @@
                         </div>
                     </form>
                 </div>
-
 
                 <!-- Charts Section -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
@@ -198,7 +242,9 @@
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nb Contrats</th>
                                 </tr>
                             </thead>
-                            <tbody class="bg-white divide-y divide-gray-200" id="metricsBody"></tbody>
+                            <tbody class="bg-white divide-y divide-gray-200" id="metricsBody">
+                                <!-- Les données seront chargées dynamiquement -->
+                            </tbody>
                         </table>
                     </div>
                 </div>
@@ -243,38 +289,26 @@
                         <table class="min-w-full divide-y divide-gray-200" id="reportsTable">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" data-sort="reportId">ID Rapport</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" data-sort="group">Groupe</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" data-sort="date">Date</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" data-sort="csm">CSM (€)</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" data-sort="lrc">LRC (€)</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" data-sort="ra">RA (€)</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" data-sort="contracts">Nb Contrats</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sort-header" data-sort="reportId">ID Rapport</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sort-header" data-sort="group">Groupe</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sort-header" data-sort="date">Date</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sort-header" data-sort="csm">CSM (€)</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sort-header" data-sort="lrc">LRC (€)</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sort-header" data-sort="ra">RA (€)</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sort-header" data-sort="contracts">Nb Contrats</th>
                                     <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200" id="reportsBody">
-                                <tr class="data-card">
-                                    <td class="px-6 py-4 whitespace-nowrap">RPT001</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">Groupe A</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">2025-07-01</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">€500,000</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">€450,000</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">€100,000</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">75</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <button class="view-btn text-primary-600 hover:text-primary-800" data-id="RPT001" aria-label="Voir le rapport RPT001"><i data-lucide="eye" class="w-4 h-4" aria-hidden="true"></i></button>
-                                        <button class="delete-btn ml-2 text-red-600 hover:text-red-800" data-id="RPT001" aria-label="Supprimer le rapport RPT001"><i data-lucide="trash" class="w-4 h-4" aria-hidden="true"></i></button>
-                                    </td>
-                                </tr>
+                                <!-- Les données seront chargées dynamiquement -->
                             </tbody>
                         </table>
                     </div>
                     <div class="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
-                        <div class="text-sm text-gray-500" id="paginationInfo">Affichage de <span class="font-medium">1</span> à <span class="font-medium">1</span> sur <span class="font-medium">1</span> entrées</div>
+                        <div class="text-sm text-gray-500" id="paginationInfo">Affichage de <span class="font-medium" id="startItem">0</span> à <span class="font-medium" id="endItem">0</span> sur <span class="font-medium" id="totalItems">0</span> entrées</div>
                         <div class="flex space-x-2">
-                            <button class="px-3 py-1 border border-gray-200 rounded-lg text-sm text-gray-500 bg-white hover:bg-gray-50 disabled:opacity-50" id="prevPage" disabled aria-label="Page précédente">Précédent</button>
-                            <button class="px-3 py-1 border border-gray-200 rounded-lg text-sm text-gray-500 bg-white hover:bg-gray-50 disabled:opacity-50" id="nextPage" disabled aria-label="Page suivante">Suivant</button>
+                            <button class="px-3 py-1 border border-gray-200 rounded-lg text-sm text-gray-500 bg-white hover:bg-gray-50 pagination-btn" id="prevPage" disabled aria-label="Page précédente">Précédent</button>
+                            <button class="px-3 py-1 border border-gray-200 rounded-lg text-sm text-gray-500 bg-white hover:bg-gray-50 pagination-btn" id="nextPage" disabled aria-label="Page suivante">Suivant</button>
                         </div>
                     </div>
                 </div>
@@ -302,7 +336,7 @@
         <div id="viewReportModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
             <div class="modal-content">
                 <h3 id="modalTitle" class="text-lg font-semibold text-gray-800 mb-4">Détails du Rapport</h3>
-                <div id="reportDetails">
+                <div id="reportDetails" class="space-y-3">
                     <p><strong>ID Rapport:</strong> <span id="detailReportId"></span></p>
                     <p><strong>Groupe:</strong> <span id="detailGroup"></span></p>
                     <p><strong>Date:</strong> <span id="detailDate"></span></p>
@@ -315,6 +349,785 @@
             </div>
         </div>
 
-        <script src="../frontend/static/js/reporting.js"></script>
-    </body>
+        <!-- Modal for Generating Report -->
+        <div id="generateReportModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="generateModalTitle">
+            <div class="modal-content">
+                <h3 id="generateModalTitle" class="text-lg font-semibold text-gray-800 mb-4">Générer un Rapport</h3>
+                <form id="generateReportForm">
+                    <div class="mb-4">
+                        <label for="reportGroup" class="block text-sm font-medium text-gray-700">Groupe</label>
+                        <select id="reportGroup" class="mt-1 p-2 w-full border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-600" required>
+                            <option value="all">Tous les groupes</option>
+                            <option value="Groupe A">Groupe A</option>
+                            <option value="Groupe B">Groupe B</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label for="reportPeriod" class="block text-sm font-medium text-gray-700">Période</label>
+                        <select id="reportPeriod" class="mt-1 p-2 w-full border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-600" required>
+                            <option value="12">12 mois</option>
+                            <option value="6">6 mois</option>
+                            <option value="3">3 mois</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label for="reportMetrics" class="block text-sm font-medium text-gray-700">Métriques à inclure</label>
+                        <div class="mt-2 space-y-2">
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" name="metrics" value="csm" class="rounded border-gray-300 text-primary-600 focus:ring-primary-600" checked>
+                                <span class="ml-2">CSM</span>
+                            </label>
+                            <label class="inline-flex items-center ml-4">
+                                <input type="checkbox" name="metrics" value="lrc" class="rounded border-gray-300 text-primary-600 focus:ring-primary-600" checked>
+                                <span class="ml-2">LRC</span>
+                            </label>
+                            <label class="inline-flex items-center ml-4">
+                                <input type="checkbox" name="metrics" value="ra" class="rounded border-gray-300 text-primary-600 focus:ring-primary-600" checked>
+                                <span class="ml-2">RA</span>
+                            </label>
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full bg-primary-600 text-white p-2 rounded-md hover:bg-primary-500" aria-label="Générer le rapport">Générer</button>
+                </form>
+                <button id="closeGenerateModal" class="mt-4 text-red-600 hover:text-red-800" aria-label="Fermer le modal">Fermer</button>
+            </div>
+        </div>
+
+    <script>
+        // Données d'exemple pour les rapports
+        let reportsData = [
+            { id: "RPT001", group: "Groupe A", date: "2025-07-01", csm: 500000, lrc: 450000, ra: 100000, contracts: 75 },
+            { id: "RPT002", group: "Groupe B", date: "2025-07-05", csm: 750000, lrc: 600000, ra: 150000, contracts: 50 },
+            { id: "RPT003", group: "Groupe A", date: "2025-07-10", csm: 520000, lrc: 470000, ra: 110000, contracts: 78 },
+            { id: "RPT004", group: "Groupe B", date: "2025-07-15", csm: 780000, lrc: 620000, ra: 160000, contracts: 52 },
+            { id: "RPT005", group: "Groupe A", date: "2025-07-20", csm: 540000, lrc: 490000, ra: 120000, contracts: 80 },
+            { id: "RPT006", group: "Groupe B", date: "2025-07-25", csm: 800000, lrc: 640000, ra: 170000, contracts: 55 },
+            { id: "RPT007", group: "Groupe A", date: "2025-08-01", csm: 560000, lrc: 510000, ra: 130000, contracts: 82 },
+            { id: "RPT008", group: "Groupe B", date: "2025-08-05", csm: 820000, lrc: 660000, ra: 180000, contracts: 58 },
+            { id: "RPT009", group: "Groupe A", date: "2025-08-10", csm: 580000, lrc: 530000, ra: 140000, contracts: 85 },
+            { id: "RPT010", group: "Groupe B", date: "2025-08-15", csm: 850000, lrc: 680000, ra: 190000, contracts: 60 }
+        ];
+
+        // Données pour les métriques par groupe
+        const metricsByGroup = {
+            'Groupe A': { csm: 580000, lrc: 530000, ra: 140000, contracts: 85 },
+            'Groupe B': { csm: 850000, lrc: 680000, ra: 190000, contracts: 60 }
+        };
+
+        // Variables globales
+        let currentPage = 1;
+        const itemsPerPage = 5;
+        let currentSort = { column: null, direction: 'asc' };
+        let metricsChartInstance = null;
+        let groupChartInstance = null;
+        let varianceChartInstance = null;
+        let historyChartInstance = null;
+        let filteredReports = [];
+
+        // Initialisation lorsque le DOM est chargé
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialiser les icônes Lucide
+            lucide.createIcons();
+            
+            // Initialiser les graphiques
+            initCharts();
+            
+            // Charger les données des rapports
+            filteredReports = [...reportsData];
+            renderReportsTable();
+            renderMetricsTable();
+            
+            // Configurer les écouteurs d'événements
+            setupEventListeners();
+        });
+
+        // Initialiser les graphiques
+        function initCharts() {
+            // Graphique d'évolution des métriques
+            const metricsCtx = document.getElementById('metricsChart').getContext('2d');
+            const metricsData = {
+                labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'],
+                datasets: [
+                    {
+                        label: 'CSM (en milliers €)',
+                        data: [450, 470, 490, 510, 530, 550, 570, 590, 610, 630, 650, 670],
+                        borderColor: '#0ea5e9',
+                        backgroundColor: 'rgba(14, 165, 233, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    },
+                    {
+                        label: 'LRC (en milliers €)',
+                        data: [400, 420, 440, 460, 480, 500, 520, 540, 560, 580, 600, 620],
+                        borderColor: '#8b5cf6',
+                        backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    },
+                    {
+                        label: 'RA (en milliers €)',
+                        data: [80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135],
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }
+                ]
+            };
+
+            metricsChartInstance = new Chart(metricsCtx, {
+                type: 'line',
+                data: metricsData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: €${context.raw.toLocaleString()}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            grid: {
+                                drawBorder: false
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return '€' + value.toLocaleString();
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Graphique de répartition par groupe
+            const groupCtx = document.getElementById('groupChart').getContext('2d');
+            const groupData = {
+                labels: ['Groupe A', 'Groupe B'],
+                datasets: [{
+                    data: [580, 850],
+                    backgroundColor: ['#0ea5e9', '#8b5cf6'],
+                    borderWidth: 0
+                }]
+            };
+
+            groupChartInstance = new Chart(groupCtx, {
+                type: 'doughnut',
+                data: groupData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `€${context.raw.toLocaleString()}K`;
+                                }
+                            }
+                        }
+                    },
+                    cutout: '70%'
+                }
+            });
+
+            // Graphique d'analyse des écarts
+            const varianceCtx = document.getElementById('varianceChart').getContext('2d');
+            const varianceData = {
+                labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin'],
+                datasets: [{
+                    label: 'Écart (%)',
+                    data: [2.5, -1.8, 3.2, -0.5, 1.7, -2.3],
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            };
+
+            varianceChartInstance = new Chart(varianceCtx, {
+                type: 'line',
+                data: varianceData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                drawBorder: false
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Graphique d'historique des rapports
+            const historyCtx = document.getElementById('historyChart').getContext('2d');
+            const historyData = {
+                labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août'],
+                datasets: [{
+                    label: 'Nombre de rapports générés',
+                    data: [5, 8, 6, 10, 12, 15, 18, 20],
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            };
+
+            historyChartInstance = new Chart(historyCtx, {
+                type: 'bar',
+                data: historyData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                drawBorder: false
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Configurer les écouteurs pour les filtres des graphiques
+            document.getElementById('chartMetric').addEventListener('change', updateMetricsChart);
+            document.getElementById('groupPeriod').addEventListener('change', updateGroupChart);
+            document.getElementById('varianceMetric').addEventListener('change', updateVarianceChart);
+            document.getElementById('historyPeriod').addEventListener('change', updateHistoryChart);
+        }
+
+        // Configurer les écouteurs d'événements
+        function setupEventListeners() {
+            // Bouton de génération de rapport
+            document.getElementById('generateReport').addEventListener('click', openGenerateReportModal);
+            
+            // Fermeture des modals
+            document.getElementById('closeModal').addEventListener('click', closeModals);
+            document.getElementById('closeGenerateModal').addEventListener('click', closeModals);
+            
+            // Soumission du formulaire de génération de rapport
+            document.getElementById('generateReportForm').addEventListener('submit', handleReportGeneration);
+            
+            // Boutons d'export
+            document.getElementById('exportCSV').addEventListener('click', exportToCSV);
+            document.getElementById('exportPDF').addEventListener('click', exportToPDF);
+            document.getElementById('exportMetricsCSV').addEventListener('click', exportMetricsToCSV);
+            
+            // Pagination
+            document.getElementById('prevPage').addEventListener('click', goToPrevPage);
+            document.getElementById('nextPage').addEventListener('click', goToNextPage);
+            
+            // Recherche
+            document.getElementById('searchInput').addEventListener('input', handleSearch);
+            
+            // Filtres
+            document.getElementById('filterGroup').addEventListener('change', applyFilters);
+            document.getElementById('filterPeriod').addEventListener('change', applyFilters);
+            document.getElementById('filterMetric').addEventListener('change', applyFilters);
+            
+            // Tri des colonnes
+            document.querySelectorAll('.sort-header').forEach(header => {
+                header.addEventListener('click', () => sortTable(header.dataset.sort));
+            });
+        }
+
+        // Afficher les rapports dans le tableau
+        function renderReportsTable() {
+            const tbody = document.getElementById('reportsBody');
+            tbody.innerHTML = '';
+            
+            const totalItems = filteredReports.length;
+            const totalPages = Math.ceil(totalItems / itemsPerPage);
+            
+            // Mettre à jour la pagination
+            updatePagination(totalItems, totalPages);
+            
+            // Calculer les indices de début et de fin
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+            
+            // Mettre à jour l'information de pagination
+            document.getElementById('startItem').textContent = totalItems > 0 ? startIndex + 1 : 0;
+            document.getElementById('endItem').textContent = endIndex;
+            document.getElementById('totalItems').textContent = totalItems;
+            
+            // Remplir le tableau avec les données de la page courante
+            for (let i = startIndex; i < endIndex; i++) {
+                const report = filteredReports[i];
+                const row = document.createElement('tr');
+                row.className = 'data-card';
+                
+                // Formater la date
+                const reportDate = new Date(report.date).toLocaleDateString('fr-FR');
+                
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">${report.id}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${report.group}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${reportDate}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">€${report.csm.toLocaleString()}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">€${report.lrc.toLocaleString()}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">€${report.ra.toLocaleString()}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${report.contracts}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button class="view-btn text-primary-600 hover:text-primary-800" data-id="${report.id}" aria-label="Voir le rapport ${report.id}">
+                            <i data-lucide="eye" class="w-4 h-4" aria-hidden="true"></i>
+                        </button>
+                        <button class="delete-btn ml-2 text-red-600 hover:text-red-800" data-id="${report.id}" aria-label="Supprimer le rapport ${report.id}">
+                            <i data-lucide="trash" class="w-4 h-4" aria-hidden="true"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            }
+            
+            // Réinitialiser les icônes Lucide pour les nouveaux éléments
+            lucide.createIcons();
+            
+            // Ajouter les écouteurs d'événements pour les boutons de visualisation et de suppression
+            document.querySelectorAll('.view-btn').forEach(btn => {
+                btn.addEventListener('click', () => viewReport(btn.dataset.id));
+            });
+            
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', () => deleteReport(btn.dataset.id));
+            });
+        }
+
+        // Afficher les métriques dans le tableau
+        function renderMetricsTable() {
+            const tbody = document.getElementById('metricsBody');
+            tbody.innerHTML = '';
+            
+            // Remplir le tableau avec les données des métriques par groupe
+            for (const [group, metrics] of Object.entries(metricsByGroup)) {
+                const row = document.createElement('tr');
+                row.className = 'data-card';
+                
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">${group}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">€${metrics.csm.toLocaleString()}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">€${metrics.lrc.toLocaleString()}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">€${metrics.ra.toLocaleString()}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${metrics.contracts}</td>
+                `;
+                tbody.appendChild(row);
+            }
+        }
+
+        // Mettre à jour la pagination
+        function updatePagination(totalItems, totalPages) {
+            const prevBtn = document.getElementById('prevPage');
+            const nextBtn = document.getElementById('nextPage');
+            
+            prevBtn.disabled = currentPage <= 1;
+            nextBtn.disabled = currentPage >= totalPages;
+        }
+
+        // Aller à la page précédente
+        function goToPrevPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                renderReportsTable();
+            }
+        }
+
+        // Aller à la page suivante
+        function goToNextPage() {
+            const totalPages = Math.ceil(filteredReports.length / itemsPerPage);
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderReportsTable();
+            }
+        }
+
+        // Ouvrir le modal de génération de rapport
+        function openGenerateReportModal() {
+            document.getElementById('generateReportModal').style.display = 'flex';
+        }
+
+        // Fermer tous les modals
+        function closeModals() {
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.style.display = 'none';
+            });
+        }
+
+        // Gérer la génération de rapport
+        function handleReportGeneration(e) {
+            e.preventDefault();
+            
+            const group = document.getElementById('reportGroup').value;
+            const period = document.getElementById('reportPeriod').value;
+            const selectedMetrics = Array.from(document.querySelectorAll('input[name="metrics"]:checked')).map(input => input.value);
+            
+            // Simuler la génération d'un rapport
+            const reportId = 'RPT' + String(reportsData.length + 1).padStart(3, '0');
+            const today = new Date().toISOString().split('T')[0];
+            
+            // Générer des données aléatoires pour le nouveau rapport
+            const baseCSM = group === 'Groupe A' ? 500000 : 750000;
+            const baseLRC = group === 'Groupe A' ? 450000 : 600000;
+            const baseRA = group === 'Groupe A' ? 100000 : 150000;
+            const baseContracts = group === 'Groupe A' ? 75 : 50;
+            
+            const randomFactor = 1 + (Math.random() * 0.2 - 0.1); // Variation de ±10%
+            
+            const newReport = {
+                id: reportId,
+                group: group === 'all' ? 'Tous' : group,
+                date: today,
+                csm: Math.round(baseCSM * randomFactor),
+                lrc: Math.round(baseLRC * randomFactor),
+                ra: Math.round(baseRA * randomFactor),
+                contracts: Math.round(baseContracts * randomFactor)
+            };
+            
+            // Ajouter le rapport aux données
+            reportsData.unshift(newReport);
+            
+            // Appliquer les filtres actuels et rafraîchir le tableau
+            applyFilters();
+            
+            // Fermer le modal
+            closeModals();
+            
+            showToast('Rapport généré avec succès');
+        }
+
+        // Voir les détails d'un rapport
+        function viewReport(reportId) {
+            const report = reportsData.find(r => r.id === reportId);
+            if (report) {
+                // Remplir le modal avec les détails du rapport
+                document.getElementById('detailReportId').textContent = report.id;
+                document.getElementById('detailGroup').textContent = report.group;
+                document.getElementById('detailDate').textContent = new Date(report.date).toLocaleDateString('fr-FR');
+                document.getElementById('detailCSM').textContent = `€${report.csm.toLocaleString()}`;
+                document.getElementById('detailLRC').textContent = `€${report.lrc.toLocaleString()}`;
+                document.getElementById('detailRA').textContent = `€${report.ra.toLocaleString()}`;
+                document.getElementById('detailContracts').textContent = report.contracts;
+                
+                // Afficher le modal
+                document.getElementById('viewReportModal').style.display = 'flex';
+            }
+        }
+
+        // Supprimer un rapport
+        function deleteReport(reportId) {
+            if (confirm('Êtes-vous sûr de vouloir supprimer ce rapport ?')) {
+                reportsData = reportsData.filter(report => report.id !== reportId);
+                applyFilters(); // Réappliquer les filtres pour mettre à jour l'affichage
+                showToast('Rapport supprimé avec succès');
+            }
+        }
+
+        // Exporter en CSV
+        function exportToCSV() {
+            const headers = ['ID Rapport', 'Groupe', 'Date', 'CSM (€)', 'LRC (€)', 'RA (€)', 'Nb Contrats'];
+            const csvData = filteredReports.map(report => [
+                report.id,
+                report.group,
+                new Date(report.date).toLocaleDateString('fr-FR'),
+                report.csm,
+                report.lrc,
+                report.ra,
+                report.contracts
+            ]);
+            
+            const csvContent = [headers, ...csvData].map(row => row.join(',')).join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'rapports_ppa.csv');
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showToast('Export CSV réalisé avec succès');
+        }
+
+        // Exporter les métriques en CSV
+        function exportMetricsToCSV() {
+            const headers = ['Groupe', 'CSM Total (€)', 'LRC Total (€)', 'RA Total (€)', 'Nb Contrats'];
+            const csvData = Object.entries(metricsByGroup).map(([group, metrics]) => [
+                group,
+                metrics.csm,
+                metrics.lrc,
+                metrics.ra,
+                metrics.contracts
+            ]);
+            
+            const csvContent = [headers, ...csvData].map(row => row.join(',')).join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'metriques_ppa.csv');
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showToast('Export CSV des métriques réalisé avec succès');
+        }
+
+        // Exporter en PDF
+        function exportToPDF() {
+            const element = document.getElementById('reportsTable');
+            const options = {
+                margin: 10,
+                filename: 'rapports_ppa.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+            };
+            
+            html2pdf().set(options).from(element).save();
+            showToast('Export PDF réalisé avec succès');
+        }
+
+        // Gérer la recherche
+        function handleSearch() {
+            applyFilters();
+        }
+
+        // Appliquer les filtres
+        function applyFilters() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const groupFilter = document.getElementById('filterGroup').value;
+            const periodFilter = document.getElementById('filterPeriod').value;
+            const metricFilter = document.getElementById('filterMetric').value;
+            
+            filteredReports = reportsData.filter(report => {
+                // Filtre de recherche
+                const matchesSearch = searchTerm === '' || 
+                    report.id.toLowerCase().includes(searchTerm) ||
+                    report.group.toLowerCase().includes(searchTerm);
+                
+                // Filtre de groupe
+                const matchesGroup = groupFilter === 'all' || report.group === groupFilter;
+                
+                return matchesSearch && matchesGroup;
+            });
+            
+            currentPage = 1;
+            renderReportsTable();
+        }
+
+        // Trier le tableau
+        function sortTable(column) {
+            if (currentSort.column === column) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.column = column;
+                currentSort.direction = 'asc';
+            }
+            
+            // Mettre à jour les indicateurs de tri visuels
+            document.querySelectorAll('.sort-header').forEach(header => {
+                header.classList.remove('sort-asc', 'sort-desc');
+                if (header.dataset.sort === column) {
+                    header.classList.add(currentSort.direction === 'asc' ? 'sort-asc' : 'sort-desc');
+                }
+            });
+            
+            // Trier les données
+            filteredReports.sort((a, b) => {
+                let valueA, valueB;
+                
+                switch (column) {
+                    case 'reportId':
+                        valueA = a.id;
+                        valueB = b.id;
+                        break;
+                    case 'group':
+                        valueA = a.group;
+                        valueB = b.group;
+                        break;
+                    case 'date':
+                        valueA = new Date(a.date);
+                        valueB = new Date(b.date);
+                        break;
+                    case 'csm':
+                        valueA = a.csm;
+                        valueB = b.csm;
+                        break;
+                    case 'lrc':
+                        valueA = a.lrc;
+                        valueB = b.lrc;
+                        break;
+                    case 'ra':
+                        valueA = a.ra;
+                        valueB = b.ra;
+                        break;
+                    case 'contracts':
+                        valueA = a.contracts;
+                        valueB = b.contracts;
+                        break;
+                    default:
+                        valueA = a.id;
+                        valueB = b.id;
+                }
+                
+                if (valueA < valueB) return currentSort.direction === 'asc' ? -1 : 1;
+                if (valueA > valueB) return currentSort.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+            
+            renderReportsTable();
+        }
+
+        // Mettre à jour le graphique des métriques
+        function updateMetricsChart() {
+            const metric = document.getElementById('chartMetric').value;
+            
+            // Simuler des données différentes selon la métrique sélectionnée
+            let data;
+            
+            if (metric === 'csm') {
+                data = [450, 470, 490, 510, 530, 550, 570, 590, 610, 630, 650, 670];
+            } else if (metric === 'lrc') {
+                data = [400, 420, 440, 460, 480, 500, 520, 540, 560, 580, 600, 620];
+            } else {
+                data = [80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135];
+            }
+            
+            metricsChartInstance.data.datasets[0].data = data;
+            metricsChartInstance.update();
+        }
+
+        // Mettre à jour le graphique de groupe
+        function updateGroupChart() {
+            const period = document.getElementById('groupPeriod').value;
+            
+            // Simuler des données différentes selon la période
+            let data;
+            
+            if (period === '12') {
+                data = [580, 850];
+            } else if (period === '6') {
+                data = [620, 890];
+            } else {
+                data = [650, 920];
+            }
+            
+            groupChartInstance.data.datasets[0].data = data;
+            groupChartInstance.update();
+        }
+
+        // Mettre à jour le graphique d'analyse des écarts
+        function updateVarianceChart() {
+            const metric = document.getElementById('varianceMetric').value;
+            
+            // Simuler des données différentes selon la métrique
+            let data;
+            
+            if (metric === 'csm') {
+                data = [2.5, -1.8, 3.2, -0.5, 1.7, -2.3];
+            } else if (metric === 'lrc') {
+                data = [1.8, -2.1, 2.8, -1.2, 0.9, -1.5];
+            } else {
+                data = [3.2, -0.8, 2.5, 0.3, 1.2, -0.7];
+            }
+            
+            varianceChartInstance.data.datasets[0].data = data;
+            varianceChartInstance.update();
+        }
+
+        // Mettre à jour le graphique d'historique
+        function updateHistoryChart() {
+            const period = document.getElementById('historyPeriod').value;
+            
+            // Simuler des données différentes selon la période
+            let labels, data;
+            
+            if (period === '12') {
+                labels = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
+                data = [5, 8, 6, 10, 12, 15, 18, 20, 22, 25, 28, 30];
+            } else if (period === '6') {
+                labels = ['Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
+                data = [18, 20, 22, 25, 28, 30];
+            } else {
+                labels = ['Oct', 'Nov', 'Déc'];
+                data = [25, 28, 30];
+            }
+            
+            historyChartInstance.data.labels = labels;
+            historyChartInstance.data.datasets[0].data = data;
+            historyChartInstance.update();
+        }
+
+        // Afficher une notification toast
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = type === 'success' ? 'toast bg-green-500 text-white p-4 rounded-lg shadow-lg' : 'toast bg-red-500 text-white p-4 rounded-lg shadow-lg';
+            toast.style.display = 'block';
+            
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3000);
+        }
+
+        // Fermer les modals en cliquant à l'extérieur
+        window.addEventListener('click', function(e) {
+            document.querySelectorAll('.modal').forEach(modal => {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
 </html>
