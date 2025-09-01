@@ -31,9 +31,66 @@
         .sidebar-divider { border-color: rgba(255, 255, 255, 0.1); }
         .data-card { transition: all 0.3s ease; }
         .data-card:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); }
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); z-index: 50; }
-        .modal-content { background-color: white; margin: 15% auto; padding: 20px; border-radius: 8px; width: 90%; max-width: 500px; position: relative; }
-        .toast { display: none; position: fixed; bottom: 20px; right: 20px; z-index: 100; }
+        .modal { 
+            display: none; 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background-color: rgba(0, 0, 0, 0.5); 
+            z-index: 50; 
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content { 
+            background-color: white; 
+            margin: 15% auto; 
+            padding: 20px; 
+            border-radius: 8px; 
+            width: 90%; 
+            max-width: 500px; 
+            position: relative; 
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .toast { 
+            display: none; 
+            position: fixed; 
+            bottom: 20px; 
+            right: 20px; 
+            z-index: 100; 
+            padding: 12px 20px;
+            border-radius: 6px;
+            color: white;
+            font-weight: 500;
+        }
+        .sort-asc::after { content: " ↑"; }
+        .sort-desc::after { content: " ↓"; }
+        .pagination-btn:disabled { cursor: not-allowed; opacity: 0.5; }
+        .setting-success { background-color: #D1FAE5; color: #065F46; }
+        .setting-warning { background-color: #FEF3C7; color: #92400E; }
+        .setting-error { background-color: #FEE2E2; color: #B91C1C; }
+        .profile-menu {
+            display: none;
+            position: absolute;
+            bottom: -130px;
+            left: 0;
+            width: 100%;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            z-index: 60;
+            overflow: hidden;
+        }
+        .profile-menu-item {
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .profile-menu-item:hover {
+            background-color: #f3f4f6;
+        }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800 antialiased">
@@ -57,7 +114,7 @@
                             <i data-lucide="file-text" class="w-5 h-5 mr-3" aria-hidden="true"></i>
                             Contrats
                         </a>
-                        <a href="calculs.html" class="flex items-center px-4 py-3 text-sm font-medium rounded-lg text-gray-300 hover:bg-dark-800">
+                        <a href="calculations.html" class="flex items-center px-4 py-3 text-sm font-medium rounded-lg text-gray-300 hover:bg-dark-800">
                             <i data-lucide="calculator" class="w-5 h-5 mr-3" aria-hidden="true"></i>
                             Calculs PPA
                         </a>
@@ -65,18 +122,39 @@
                             <i data-lucide="pie-chart" class="w-5 h-5 mr-3" aria-hidden="true"></i>
                             Reporting
                         </a>
-                        <a href="setting.html" class="flex items-center px-4 py-3 text-sm font-medium rounded-lg bg-primary-800 text-white" aria-current="page">
+                        <a href="#" class="flex items-center px-4 py-3 text-sm font-medium rounded-lg bg-primary-800 text-white" aria-current="page">
                             <i data-lucide="settings" class="w-5 h-5 mr-3" aria-hidden="true"></i>
                             Paramètres
                         </a>
                     </nav>
-                    <div class="mt-auto px-4 pt-6">
-                        <div class="bg-dark-800 rounded-lg p-4">
+                    <div class="mt-auto px-4 pt-6 relative">
+                        <div class="bg-dark-800 rounded-lg p-4 cursor-pointer" id="profileDropdown">
                             <div class="flex items-center">
                                 <img src="https://picsum.photos/40?random=3" alt="Photo de profil" class="rounded-full w-10 h-10">
                                 <div class="ml-3">
                                     <p class="text-sm font-medium text-white">Admin User</p>
                                     <p class="text-xs text-gray-400">Administrateur</p>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Menu de profil -->
+                        <div class="profile-menu" id="profileMenu">
+                            <div class="profile-menu-item" onclick="viewProfile()">
+                                <div class="flex items-center">
+                                    <i data-lucide="user" class="w-4 h-4 mr-2"></i>
+                                    <span>Voir le profil</span>
+                                </div>
+                            </div>
+                            <div class="profile-menu-item" onclick="openSettings()">
+                                <div class="flex items-center">
+                                    <i data-lucide="settings" class="w-4 h-4 mr-2"></i>
+                                    <span>Paramètres du compte</span>
+                                </div>
+                            </div>
+                            <div class="profile-menu-item text-red-600" onclick="logout()">
+                                <div class="flex items-center">
+                                    <i data-lucide="log-out" class="w-4 h-4 mr-2"></i>
+                                    <span>Se déconnecter</span>
                                 </div>
                             </div>
                         </div>
@@ -93,7 +171,7 @@
                     <h1 class="text-2xl font-bold text-dark-900">Paramètres</h1>
                     <div class="flex items-center space-x-4">
                         <div class="relative w-64">
-                            <input type="text" placeholder="Rechercher..." class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500" aria-label="Rechercher des paramètres">
+                            <input type="text" id="searchInput" placeholder="Rechercher..." class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500" aria-label="Rechercher des paramètres">
                             <i data-lucide="search" class="absolute left-3 top-2.5 text-gray-400 w-4 h-4" aria-hidden="true"></i>
                         </div>
                         <button class="p-2 text-gray-500 hover:text-gray-700 relative" aria-label="Notifications">
@@ -196,31 +274,14 @@
                         <table class="min-w-full divide-y divide-gray-200" id="groupsTable">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" data-sort="groupId">ID Groupe</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" data-sort="name">Nom</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" data-sort="description">Description</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sort-header" data-sort="groupId">ID Groupe</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sort-header" data-sort="name">Nom</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sort-header" data-sort="description">Description</th>
                                     <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200" id="groupsBody">
-                                <tr class="data-card">
-                                    <td class="px-6 py-4 whitespace-nowrap">GRP001</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">Groupe A</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">Contrats Vie</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <button class="edit-btn text-primary-600 hover:text-primary-800" data-id="GRP001" aria-label="Modifier le groupe GRP001"><i data-lucide="edit" class="w-4 h-4" aria-hidden="true"></i></button>
-                                        <button class="delete-btn ml-2 text-red-600 hover:text-red-800" data-id="GRP001" aria-label="Supprimer le groupe GRP001"><i data-lucide="trash" class="w-4 h-4" aria-hidden="true"></i></button>
-                                    </td>
-                                </tr>
-                                <tr class="data-card">
-                                    <td class="px-6 py-4 whitespace-nowrap">GRP002</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">Groupe B</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">Contrats Santé</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <button class="edit-btn text-primary-600 hover:text-primary-800" data-id="GRP002" aria-label="Modifier le groupe GRP002"><i data-lucide="edit" class="w-4 h-4" aria-hidden="true"></i></button>
-                                        <button class="delete-btn ml-2 text-red-600 hover:text-red-800" data-id="GRP002" aria-label="Supprimer le groupe GRP002"><i data-lucide="trash" class="w-4 h-4" aria-hidden="true"></i></button>
-                                    </td>
-                                </tr>
+                                <!-- Les données seront chargées dynamiquement -->
                             </tbody>
                         </table>
                     </div>
@@ -245,34 +306,15 @@
                         <table class="min-w-full divide-y divide-gray-200" id="rulesTable">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" data-sort="ruleId">ID Règle</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" data-sort="metric">Métrique</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" data-sort="threshold">Seuil (€)</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" data-sort="action">Action</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sort-header" data-sort="ruleId">ID Règle</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sort-header" data-sort="metric">Métrique</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sort-header" data-sort="threshold">Seuil (€)</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sort-header" data-sort="action">Action</th>
                                     <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200" id="rulesBody">
-                                <tr class="data-card">
-                                    <td class="px-6 py-4 whitespace-nowrap">RUL001</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">CSM</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">500000</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">Alerte si inférieur</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <button class="edit-btn text-primary-600 hover:text-primary-800" data-id="RUL001" aria-label="Modifier la règle RUL001"><i data-lucide="edit" class="w-4 h-4" aria-hidden="true"></i></button>
-                                        <button class="delete-btn ml-2 text-red-600 hover:text-red-800" data-id="RUL001" aria-label="Supprimer la règle RUL001"><i data-lucide="trash" class="w-4 h-4" aria-hidden="true"></i></button>
-                                    </td>
-                                </tr>
-                                <tr class="data-card">
-                                    <td class="px-6 py-4 whitespace-nowrap">RUL002</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">LRC</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">400000</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">Alerte si supérieur</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <button class="edit-btn text-primary-600 hover:text-primary-800" data-id="RUL002" aria-label="Modifier la règle RUL002"><i data-lucide="edit" class="w-4 h-4" aria-hidden="true"></i></button>
-                                        <button class="delete-btn ml-2 text-red-600 hover:text-red-800" data-id="RUL002" aria-label="Supprimer la règle RUL002"><i data-lucide="trash" class="w-4 h-4" aria-hidden="true"></i></button>
-                                    </td>
-                                </tr>
+                                <!-- Les données seront chargées dynamiquement -->
                             </tbody>
                         </table>
                     </div>
@@ -285,6 +327,7 @@
             <div class="modal-content">
                 <h3 id="groupModalTitle" class="text-lg font-semibold text-gray-800 mb-4">Ajouter/Modifier Groupe</h3>
                 <form id="groupForm">
+                    <input type="hidden" id="editingGroupId">
                     <div class="mb-4">
                         <label for="groupId" class="block text-sm font-medium text-gray-700">ID Groupe</label>
                         <input type="text" id="groupId" class="mt-1 p-2 w-full border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-600" readonly>
@@ -310,6 +353,7 @@
             <div class="modal-content">
                 <h3 id="ruleModalTitle" class="text-lg font-semibold text-gray-800 mb-4">Ajouter/Modifier Règle de Validation</h3>
                 <form id="ruleForm">
+                    <input type="hidden" id="editingRuleId">
                     <div class="mb-4">
                         <label for="ruleId" class="block text-sm font-medium text-gray-700">ID Règle</label>
                         <input type="text" id="ruleId" class="mt-1 p-2 w-full border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-600" readonly>
@@ -341,8 +385,572 @@
             </div>
         </div>
 
-        
-        <script src="../frontend/static/js/setting.js"></script>
-    </body>
+    <script>
+        // Données d'exemple pour les groupes de contrats
+        let groupsData = [
+            { id: "GRP001", name: "Groupe A", description: "Contrats Vie" },
+            { id: "GRP002", name: "Groupe B", description: "Contrats Santé" },
+            { id: "GRP003", name: "Groupe C", description: "Contrats Retraite" },
+            { id: "GRP004", name: "Groupe D", description: "Contrats Mixte" }
+        ];
 
+        // Données d'exemple pour les règles de validation
+        let rulesData = [
+            { id: "RUL001", metric: "CSM", threshold: 500000, action: "Alerte si inférieur" },
+            { id: "RUL002", metric: "LRC", threshold: 400000, action: "Alerte si supérieur" },
+            { id: "RUL003", metric: "RA", threshold: 100000, action: "Alerte si inférieur" },
+            { id: "RUL004", metric: "CSM", threshold: 1000000, action: "Alerte si supérieur" }
+        ];
+
+        // Variables globales
+        let currentSort = { column: null, direction: 'asc' };
+
+        // Initialisation lorsque le DOM est chargé
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialiser les icônes Lucide
+            lucide.createIcons();
+            
+            // Charger les données
+            renderGroupsTable();
+            renderRulesTable();
+            
+            // Configurer les écouteurs d'événements
+            setupEventListeners();
+            
+            // Charger les paramètres sauvegardés
+            loadSavedSettings();
+        });
+
+        // Configurer les écouteurs d'événements
+        function setupEventListeners() {
+            // Soumission des formulaires
+            document.getElementById('generalSettingsForm').addEventListener('submit', handleGeneralSettingsSubmit);
+            document.getElementById('assumptionsForm').addEventListener('submit', handleAssumptionsSubmit);
+            document.getElementById('groupForm').addEventListener('submit', handleGroupSubmit);
+            document.getElementById('ruleForm').addEventListener('submit', handleRuleSubmit);
+            
+            // Boutons d'ajout
+            document.getElementById('addGroup').addEventListener('click', openAddGroupModal);
+            document.getElementById('addRule').addEventListener('click', openAddRuleModal);
+            
+            // Boutons d'export
+            document.getElementById('exportAssumptionsCSV').addEventListener('click', exportAssumptionsToCSV);
+            document.getElementById('exportGroupsCSV').addEventListener('click', exportGroupsToCSV);
+            document.getElementById('exportRulesCSV').addEventListener('click', exportRulesToCSV);
+            
+            // Fermeture des modals
+            document.getElementById('closeGroupModal').addEventListener('click', closeModals);
+            document.getElementById('closeRuleModal').addEventListener('click', closeModals);
+            
+            // Recherche
+            document.getElementById('searchInput').addEventListener('input', handleSearch);
+            
+            // Tri des colonnes
+            document.querySelectorAll('.sort-header').forEach(header => {
+                header.addEventListener('click', () => sortTable(header.dataset.sort, header.dataset.table));
+            });
+            
+            // Gestion du menu de profil
+            document.getElementById('profileDropdown').addEventListener('click', toggleProfileMenu);
+            
+            // Fermer le menu de profil en cliquant ailleurs
+            document.addEventListener('click', function(e) {
+                const profileMenu = document.getElementById('profileMenu');
+                const profileDropdown = document.getElementById('profileDropdown');
+                
+                if (!profileDropdown.contains(e.target) && !profileMenu.contains(e.target)) {
+                    profileMenu.style.display = 'none';
+                }
+            });
+        }
+
+        // Basculer l'affichage du menu de profil
+        function toggleProfileMenu() {
+            const profileMenu = document.getElementById('profileMenu');
+            if (profileMenu.style.display === 'block') {
+                profileMenu.style.display = 'none';
+            } else {
+                profileMenu.style.display = 'block';
+            }
+        }
+
+        // Voir le profil
+        function viewProfile() {
+            alert('Fonctionnalité "Voir le profil" en cours de développement');
+            document.getElementById('profileMenu').style.display = 'none';
+        }
+
+        // Ouvrir les paramètres du compte
+        function openSettings() {
+            alert('Fonctionnalité "Paramètres du compte" en cours de développement');
+            document.getElementById('profileMenu').style.display = 'none';
+        }
+
+        // Se déconnecter
+        function logout() {
+            if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
+                // Simuler une déconnexion
+                showToast('Déconnexion réussie');
+                
+                // Rediriger vers la page de connexion après un court délai
+                setTimeout(() => {
+                    window.location.href = 'login.html'; // Remplacez par l'URL de votre page de connexion
+                }, 1500);
+            }
+            document.getElementById('profileMenu').style.display = 'none';
+        }
+
+        // Charger les paramètres sauvegardés
+        function loadSavedSettings() {
+            // Charger les paramètres généraux depuis le localStorage
+            const savedGeneralSettings = localStorage.getItem('generalSettings');
+            if (savedGeneralSettings) {
+                const settings = JSON.parse(savedGeneralSettings);
+                document.getElementById('defaultDiscountRate').value = settings.defaultDiscountRate || 2.5;
+                document.getElementById('defaultAIAdjustment').value = settings.defaultAIAdjustment || 1.0;
+                document.getElementById('currency').value = settings.currency || 'EUR';
+                document.getElementById('calculationFrequency').value = settings.calculationFrequency || 'monthly';
+            }
+            
+            // Charger les hypothèses IFRS17 depuis le localStorage
+            const savedAssumptions = localStorage.getItem('ifrs17Assumptions');
+            if (savedAssumptions) {
+                const assumptions = JSON.parse(savedAssumptions);
+                document.getElementById('mortalityRate').value = assumptions.mortalityRate || 0.5;
+                document.getElementById('lapseRate').value = assumptions.lapseRate || 1.5;
+                document.getElementById('inflationRate').value = assumptions.inflationRate || 2.0;
+                document.getElementById('expenseAssumption').value = assumptions.expenseAssumption || 10000;
+            }
+        }
+
+        // Afficher les groupes dans le tableau
+        function renderGroupsTable() {
+            const tbody = document.getElementById('groupsBody');
+            tbody.innerHTML = '';
+            
+            // Remplir le tableau avec les données
+            groupsData.forEach(group => {
+                const row = document.createElement('tr');
+                row.className = 'data-card';
+                
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">${group.id}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${group.name}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${group.description}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button class="edit-btn text-primary-600 hover:text-primary-800" data-id="${group.id}" aria-label="Modifier le groupe ${group.id}">
+                            <i data-lucide="edit" class="w-4 h-4" aria-hidden="true"></i>
+                        </button>
+                        <button class="delete-btn ml-2 text-red-600 hover:text-red-800" data-id="${group.id}" aria-label="Supprimer le groupe ${group.id}">
+                            <i data-lucide="trash" class="w-4 h-4" aria-hidden="true"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            // Réinitialiser les icônes Lucide pour les nouveaux éléments
+            lucide.createIcons();
+            
+            // Ajouter les écouteurs d'événements pour les boutons d'édition et de suppression
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', () => editGroup(btn.dataset.id));
+            });
+            
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', () => deleteGroup(btn.dataset.id));
+            });
+        }
+
+        // Afficher les règles dans le tableau
+        function renderRulesTable() {
+            const tbody = document.getElementById('rulesBody');
+            tbody.innerHTML = '';
+            
+            // Remplir le tableau avec les données
+            rulesData.forEach(rule => {
+                const row = document.createElement('tr');
+                row.className = 'data-card';
+                
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">${rule.id}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${rule.metric}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${rule.threshold.toLocaleString()}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${rule.action}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button class="edit-btn text-primary-600 hover:text-primary-800" data-id="${rule.id}" aria-label="Modifier la règle ${rule.id}">
+                            <i data-lucide="edit" class="w-4 h-4" aria-hidden="true"></i>
+                        </button>
+                        <button class="delete-btn ml-2 text-red-600 hover:text-red-800" data-id="${rule.id}" aria-label="Supprimer la règle ${rule.id}">
+                            <i data-lucide="trash" class="w-4 h-4" aria-hidden="true"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            // Réinitialiser les icônes Lucide pour les nouveaux éléments
+            lucide.createIcons();
+            
+            // Ajouter les écouteurs d'événements pour les boutons d'édition et de suppression
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', () => editRule(btn.dataset.id));
+            });
+            
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', () => deleteRule(btn.dataset.id));
+            });
+        }
+
+        // Gérer la soumission des paramètres généraux
+        function handleGeneralSettingsSubmit(e) {
+            e.preventDefault();
+            
+            const settings = {
+                defaultDiscountRate: parseFloat(document.getElementById('defaultDiscountRate').value),
+                defaultAIAdjustment: parseFloat(document.getElementById('defaultAIAdjustment').value),
+                currency: document.getElementById('currency').value,
+                calculationFrequency: document.getElementById('calculationFrequency').value
+            };
+            
+            // Sauvegarder dans le localStorage
+            localStorage.setItem('generalSettings', JSON.stringify(settings));
+            
+            showToast('Paramètres généraux sauvegardés avec succès');
+        }
+
+        // Gérer la soumission des hypothèses IFRS17
+        function handleAssumptionsSubmit(e) {
+            e.preventDefault();
+            
+            const assumptions = {
+                mortalityRate: parseFloat(document.getElementById('mortalityRate').value),
+                lapseRate: parseFloat(document.getElementById('lapseRate').value),
+                inflationRate: parseFloat(document.getElementById('inflationRate').value),
+                expenseAssumption: parseFloat(document.getElementById('expenseAssumption').value)
+            };
+            
+            // Sauvegarder dans le localStorage
+            localStorage.setItem('ifrs17Assumptions', JSON.stringify(assumptions));
+            
+            showToast('Hypothèses IFRS17 sauvegardées avec succès');
+        }
+
+        // Ouvrir le modal d'ajout de groupe
+        function openAddGroupModal() {
+            document.getElementById('groupModalTitle').textContent = 'Ajouter un Groupe';
+            document.getElementById('editingGroupId').value = '';
+            document.getElementById('groupId').value = 'GRP' + String(groupsData.length + 1).padStart(3, '0');
+            document.getElementById('groupName').value = '';
+            document.getElementById('groupDescription').value = '';
+            
+            document.getElementById('groupModal').style.display = 'flex';
+        }
+
+        // Éditer un groupe
+        function editGroup(groupId) {
+            const group = groupsData.find(g => g.id === groupId);
+            if (group) {
+                document.getElementById('groupModalTitle').textContent = 'Modifier le Groupe';
+                document.getElementById('editingGroupId').value = group.id;
+                document.getElementById('groupId').value = group.id;
+                document.getElementById('groupName').value = group.name;
+                document.getElementById('groupDescription').value = group.description;
+                
+                document.getElementById('groupModal').style.display = 'flex';
+            }
+        }
+
+        // Gérer la soumission du formulaire de groupe
+        function handleGroupSubmit(e) {
+            e.preventDefault();
+            
+            const groupId = document.getElementById('groupId').value;
+            const groupName = document.getElementById('groupName').value;
+            const groupDescription = document.getElementById('groupDescription').value;
+            const editingGroupId = document.getElementById('editingGroupId').value;
+            
+            if (editingGroupId) {
+                // Modifier le groupe existant
+                const index = groupsData.findIndex(group => group.id === editingGroupId);
+                if (index !== -1) {
+                    groupsData[index] = { id: groupId, name: groupName, description: groupDescription };
+                }
+            } else {
+                // Ajouter un nouveau groupe
+                groupsData.push({ id: groupId, name: groupName, description: groupDescription });
+            }
+            
+            // Mettre à jour l'interface
+            renderGroupsTable();
+            closeModals();
+            showToast('Groupe sauvegardé avec succès');
+        }
+
+        // Supprimer un groupe
+        function deleteGroup(groupId) {
+            if (confirm('Êtes-vous sûr de vouloir supprimer ce groupe ?')) {
+                groupsData = groupsData.filter(group => group.id !== groupId);
+                renderGroupsTable();
+                showToast('Groupe supprimé avec succès');
+            }
+        }
+
+        // Ouvrir le modal d'ajout de règle
+        function openAddRuleModal() {
+            document.getElementById('ruleModalTitle').textContent = 'Ajouter une Règle';
+            document.getElementById('editingRuleId').value = '';
+            document.getElementById('ruleId').value = 'RUL' + String(rulesData.length + 1).padStart(3, '0');
+            document.getElementById('ruleMetric').value = 'CSM';
+            document.getElementById('ruleThreshold').value = '';
+            document.getElementById('ruleAction').value = 'Alerte si inférieur';
+            
+            document.getElementById('ruleModal').style.display = 'flex';
+        }
+
+        // Éditer une règle
+        function editRule(ruleId) {
+            const rule = rulesData.find(r => r.id === ruleId);
+            if (rule) {
+                document.getElementById('ruleModalTitle').textContent = 'Modifier la Règle';
+                document.getElementById('editingRuleId').value = rule.id;
+                document.getElementById('ruleId').value = rule.id;
+                document.getElementById('ruleMetric').value = rule.metric;
+                document.getElementById('ruleThreshold').value = rule.threshold;
+                document.getElementById('ruleAction').value = rule.action;
+                
+                document.getElementById('ruleModal').style.display = 'flex';
+            }
+        }
+
+        // Gérer la soumission du formulaire de règle
+        function handleRuleSubmit(e) {
+            e.preventDefault();
+            
+            const ruleId = document.getElementById('ruleId').value;
+            const ruleMetric = document.getElementById('ruleMetric').value;
+            const ruleThreshold = parseFloat(document.getElementById('ruleThreshold').value);
+            const ruleAction = document.getElementById('ruleAction').value;
+            const editingRuleId = document.getElementById('editingRuleId').value;
+            
+            if (editingRuleId) {
+                // Modifier la règle existante
+                const index = rulesData.findIndex(rule => rule.id === editingRuleId);
+                if (index !== -1) {
+                    rulesData[index] = { id: ruleId, metric: ruleMetric, threshold: ruleThreshold, action: ruleAction };
+                }
+            } else {
+                // Ajouter une nouvelle règle
+                rulesData.push({ id: ruleId, metric: ruleMetric, threshold: ruleThreshold, action: ruleAction });
+            }
+            
+            // Mettre à jour l'interface
+            renderRulesTable();
+            closeModals();
+            showToast('Règle sauvegardée avec succès');
+        }
+
+        // Supprimer une règle
+        function deleteRule(ruleId) {
+            if (confirm('Êtes-vous sûr de vouloir supprimer cette règle ?')) {
+                rulesData = rulesData.filter(rule => rule.id !== ruleId);
+                renderRulesTable();
+                showToast('Règle supprimée avec succès');
+            }
+        }
+
+        // Exporter les hypothèses en CSV
+        function exportAssumptionsToCSV() {
+            const assumptions = {
+                'Taux de Mortalité (%)': document.getElementById('mortalityRate').value,
+                'Taux de Rachat (%)': document.getElementById('lapseRate').value,
+                'Taux d\'Inflation (%)': document.getElementById('inflationRate').value,
+                'Hypothèse de Frais (€)': document.getElementById('expenseAssumption').value
+            };
+            
+            const csvContent = Object.entries(assumptions).map(([key, value]) => `${key},${value}`).join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'hypotheses_ifrs17.csv');
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showToast('Export CSV des hypothèses réalisé avec succès');
+        }
+
+        // Exporter les groupes en CSV
+        function exportGroupsToCSV() {
+            const headers = ['ID Groupe', 'Nom', 'Description'];
+            const csvData = groupsData.map(group => [group.id, group.name, group.description]);
+            
+            const csvContent = [headers, ...csvData].map(row => row.join(',')).join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'groupes_contrats.csv');
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showToast('Export CSV des groupes réalisé avec succès');
+        }
+
+        // Exporter les règles en CSV
+        function exportRulesToCSV() {
+            const headers = ['ID Règle', 'Métrique', 'Seuil (€)', 'Action'];
+            const csvData = rulesData.map(rule => [rule.id, rule.metric, rule.threshold, rule.action]);
+            
+            const csvContent = [headers, ...csvData].map(row => row.join(',')).join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'regles_validation.csv');
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showToast('Export CSV des règles réalisé avec succès');
+        }
+
+        // Gérer la recherche
+        function handleSearch() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            
+            // Filtrer les groupes
+            const filteredGroups = groupsData.filter(group => 
+                group.id.toLowerCase().includes(searchTerm) ||
+                group.name.toLowerCase().includes(searchTerm) ||
+                group.description.toLowerCase().includes(searchTerm)
+            );
+            
+            // Filtrer les règles
+            const filteredRules = rulesData.filter(rule => 
+                rule.id.toLowerCase().includes(searchTerm) ||
+                rule.metric.toLowerCase().includes(searchTerm) ||
+                rule.action.toLowerCase().includes(searchTerm)
+            );
+            
+            // Afficher les résultats filtrés (implémentation simplifiée)
+            if (searchTerm) {
+                // Pour une implémentation complète, il faudrait créer des fonctions de rendu spécifiques pour les résultats filtrés
+                console.log('Recherche:', searchTerm, filteredGroups, filteredRules);
+            }
+        }
+
+        // Trier les tableaux
+        function sortTable(column, tableType) {
+            let dataArray;
+            let renderFunction;
+            
+            if (tableType === 'groupId') {
+                dataArray = groupsData;
+                renderFunction = renderGroupsTable;
+            } else if (tableType === 'ruleId') {
+                dataArray = rulesData;
+                renderFunction = renderRulesTable;
+            } else {
+                return;
+            }
+            
+            if (currentSort.column === column) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.column = column;
+                currentSort.direction = 'asc';
+            }
+            
+            // Mettre à jour les indicateurs de tri visuels
+            document.querySelectorAll('.sort-header').forEach(header => {
+                header.classList.remove('sort-asc', 'sort-desc');
+                if (header.dataset.sort === column && header.dataset.table === tableType) {
+                    header.classList.add(currentSort.direction === 'asc' ? 'sort-asc' : 'sort-desc');
+                }
+            });
+            
+            // Trier les données
+            dataArray.sort((a, b) => {
+                let valueA, valueB;
+                
+                switch (column) {
+                    case 'groupId':
+                    case 'ruleId':
+                        valueA = a.id;
+                        valueB = b.id;
+                        break;
+                    case 'name':
+                        valueA = a.name;
+                        valueB = b.name;
+                        break;
+                    case 'description':
+                        valueA = a.description;
+                        valueB = b.description;
+                        break;
+                    case 'metric':
+                        valueA = a.metric;
+                        valueB = b.metric;
+                        break;
+                    case 'threshold':
+                        valueA = a.threshold;
+                        valueB = b.threshold;
+                        break;
+                    case 'action':
+                        valueA = a.action;
+                        valueB = b.action;
+                        break;
+                    default:
+                        valueA = a.id;
+                        valueB = b.id;
+                }
+                
+                if (valueA < valueB) return currentSort.direction === 'asc' ? -1 : 1;
+                if (valueA > valueB) return currentSort.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+            
+            renderFunction();
+        }
+
+        // Fermer tous les modals
+        function closeModals() {
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.style.display = 'none';
+            });
+        }
+
+        // Afficher une notification toast
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = type === 'success' ? 'toast bg-green-500 text-white p-4 rounded-lg shadow-lg' : 'toast bg-red-500 text-white p-4 rounded-lg shadow-lg';
+            toast.style.display = 'block';
+            
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3000);
+        }
+
+        // Fermer les modals en cliquant à l'extérieur
+        window.addEventListener('click', function(e) {
+            document.querySelectorAll('.modal').forEach(modal => {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
 </html>
